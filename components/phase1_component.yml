@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase1_ingestion
 display_name: Phase-1 Ingestion (Stock Data)
-version: 8
+version: 9
 type: command
 
 inputs:

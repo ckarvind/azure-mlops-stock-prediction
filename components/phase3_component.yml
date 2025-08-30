@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase3_eda_dq
-version: 22
+version: 23
 type: command
 display_name: Phase 3 — EDA & Data Quality
 description: Scans model_ready_data, computes per-ticker/global stats, uploads CSV/JSON + Plotly HTML + PDF, and emits a gate.

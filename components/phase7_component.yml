@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase7_final_scoring
-version: 15
+version: 16
 type: command
 display_name: phase7_scoring
 code: ../src

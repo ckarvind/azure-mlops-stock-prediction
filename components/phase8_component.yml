@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase8_backtest
-version: 14
+version: 15
 type: command
 display_name: phase8_backtest
 code: ../src

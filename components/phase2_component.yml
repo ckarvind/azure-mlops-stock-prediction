@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase2_feature_engineering
-version: 21
+version: 22
 type: command
 display_name: Phase 2 — Feature Engineering
 description: Reads raw OHLCV parquet from Blob, adds TA features & outlier flags, writes model_ready_data.

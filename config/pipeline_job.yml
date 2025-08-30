@@ -8,7 +8,7 @@ settings:
   continue_on_step_failure: false
 
 inputs:
-  vault_url: "https://stockpredictionvault2025.vault.azure.net"
+  vault_url: "https://stockpredictionvaultfree.vault.azure.net"
   secret_name: "AzureBlobConnStr"
   container: "stock-data"
 
@@ -54,8 +54,8 @@ jobs:
 
   phase1_ingestion:
     type: command
-    component: file:./components/phase1_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase1_ingestion:9
+    compute: azureml:stock-data-cluster
     inputs:
       vault_url:   ${{parent.inputs.vault_url}}
       secret_name: ${{parent.inputs.secret_name}}
@@ -67,8 +67,8 @@ jobs:
 
   phase2_feature_engineering:
     type: command
-    component: file:./components/phase2_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase2_feature_engineering:22
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase1_ingestion
     inputs:
@@ -87,8 +87,8 @@ jobs:
 
   phase3_eda_dq:
     type: command
-    component: file:./components/phase3_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase3_eda_dq:23
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase2_feature_engineering
     inputs:
@@ -102,8 +102,8 @@ jobs:
 
   phase4_prepare:
     type: command
-    component: file:./components/phase4_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase4_prepare_training_data:17
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase3_eda_dq
     inputs:
@@ -120,8 +120,8 @@ jobs:
 
   phase5_model1:
     type: command
-    component: file:./components/phase5_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase5_model1_fast:15
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase4_prepare
     inputs:
@@ -139,8 +139,8 @@ jobs:
 
   phase6_model2:
     type: command
-    component: file:./components/phase6_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase6_model2_regressor:16
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase5_model1
     inputs:
@@ -153,8 +153,8 @@ jobs:
 
   phase7_scoring:
     type: command
-    component: file:./components/phase7_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase7_final_scoring:16
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase6_model2
     inputs:
@@ -167,8 +167,8 @@ jobs:
 
   phase8_backtest:
     type: command
-    component: file:./components/phase8_component.yml
-    compute: azureml:stockdataF1
+    component: azureml:phase8_backtest:15
+    compute: azureml:stock-data-cluster
     depends_on:
       - phase7_scoring
     inputs:

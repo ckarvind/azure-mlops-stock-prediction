@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase6_model2_regressor
-version: 15
+version: 16
 type: command
 display_name: phase6_model2
 code: ../src

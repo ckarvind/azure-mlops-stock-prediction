@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: phase4_prepare_training_data
-version: 16
+version: 17
 type: command
 display_name: Phase 4 — Prepare Training
 environment: azureml:phases-env:20
