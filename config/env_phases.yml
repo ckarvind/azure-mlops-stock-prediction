@@ -1,0 +1,6 @@
+$schema: https://azuremlschemas.azureedge.net/latest/environment.schema.json
+name: phases-env
+version: 20
+image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest
+conda_file: conda_phases.yml
+description: "Shared env for Phases 1–8 (adds phase 1 deps: yfinance, requests, lxml, azure-ai-ml)."

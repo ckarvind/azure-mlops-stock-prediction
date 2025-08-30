@@ -1,0 +1,182 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+display_name: stock-mlops-e2e
+experiment_name: mlops_e2e
+description: "Phases 1→8 orchestrated; Blob-centric I/O via Key Vault"
+
+settings:
+  continue_on_step_failure: false
+
+inputs:
+  vault_url: "https://stockpredictionvault2025.vault.azure.net"
+  secret_name: "AzureBlobConnStr"
+  container: "stock-data"
+
+  # Phase 1
+  blob_folder: "stockdata_us_adjclose/"
+  output_prefix_phase1: "stockdata_us_adjclose"
+  min_years: 20
+  refresh: "false"
+
+  # Phase 2
+  output_prefix: "model_ready_data"
+  sector_blob: "sectors_20250809.csv"
+  z_threshold: 4.0
+  workers: 12
+  limit: 0
+  log_level: "INFO"
+  mlflow: "true"
+
+  # Phase 4–8
+  tickers: "ALL"
+  start_date: "2000-01-01"
+  end_date: "2100-12-31"
+  target_horizon_days: 252
+  high_growth_threshold: 0.25
+  drop_outlier_flags: "false"
+
+  sample_frac: 0.02
+  n_iter: 4
+  cv: 2
+  optimize_for: "f1"
+  test_eval_frac: 0.2
+  register_model1: "false"
+  upload_predictions: "true"
+
+  model1_threshold: 0.20
+  top_n: 10
+  rebalance_freq: "Q"
+  initial_capital: 100000
+  register_model2: "false"
+  splits_for_backtest: "val,test"
+
+jobs:
+
+  phase1_ingestion:
+    type: command
+    component: file:./components/phase1_component.yml
+    compute: azureml:stockdataF1
+    inputs:
+      vault_url:   ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container:   ${{parent.inputs.container}}
+      blob_folder: ${{parent.inputs.blob_folder}}
+      output_prefix: ${{parent.inputs.output_prefix_phase1}}
+      min_years:   ${{parent.inputs.min_years}}
+      refresh:     ${{parent.inputs.refresh}}
+
+  phase2_feature_engineering:
+    type: command
+    component: file:./components/phase2_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase1_ingestion
+    inputs:
+      upstream_gate: ${{parent.jobs.phase1_ingestion.outputs.done}}   # Phase-1 gate (uri_file)
+      vault_url:      ${{parent.inputs.vault_url}}
+      secret_name:    ${{parent.inputs.secret_name}}
+      container:      ${{parent.inputs.container}}
+      input_prefix:   ${{parent.inputs.output_prefix_phase1}}
+      output_prefix:  ${{parent.inputs.output_prefix}}
+      sector_blob:    ${{parent.inputs.sector_blob}}
+      z_threshold:    ${{parent.inputs.z_threshold}}
+      workers:        ${{parent.inputs.workers}}
+      limit:          ${{parent.inputs.limit}}
+      log_level:      ${{parent.inputs.log_level}}
+      mlflow:         ${{parent.inputs.mlflow}}
+
+  phase3_eda_dq:
+    type: command
+    component: file:./components/phase3_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase2_feature_engineering
+    inputs:
+      upstream_gate: ${{parent.jobs.phase2_feature_engineering.outputs.done}}  # Phase-2 gate (uri_folder)
+      vault_url:     ${{parent.inputs.vault_url}}
+      secret_name:   ${{parent.inputs.secret_name}}
+      container:     ${{parent.inputs.container}}
+      input_prefix:  ${{parent.inputs.output_prefix}}
+      output_prefix: "eda/phase3"
+      min_pass_rate: 0.80
+
+  phase4_prepare:
+    type: command
+    component: file:./components/phase4_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase3_eda_dq
+    inputs:
+      upstream_gate: ${{parent.jobs.phase3_eda_dq.outputs.done}}
+      vault_url: ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container: ${{parent.inputs.container}}
+      tickers: ${{parent.inputs.tickers}}
+      start_date: ${{parent.inputs.start_date}}
+      end_date: ${{parent.inputs.end_date}}
+      target_horizon_days: ${{parent.inputs.target_horizon_days}}
+      high_growth_threshold: ${{parent.inputs.high_growth_threshold}}
+      drop_outlier_flags: ${{parent.inputs.drop_outlier_flags}}
+
+  phase5_model1:
+    type: command
+    component: file:./components/phase5_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase4_prepare
+    inputs:
+      upstream_gate: ${{parent.jobs.phase4_prepare.outputs.done}}
+      vault_url: ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container: ${{parent.inputs.container}}
+      sample_frac: ${{parent.inputs.sample_frac}}
+      n_iter: ${{parent.inputs.n_iter}}
+      cv: ${{parent.inputs.cv}}
+      optimize_for: ${{parent.inputs.optimize_for}}
+      test_eval_frac: ${{parent.inputs.test_eval_frac}}
+      register_model1: ${{parent.inputs.register_model1}}
+      upload_predictions: ${{parent.inputs.upload_predictions}}
+
+  phase6_model2:
+    type: command
+    component: file:./components/phase6_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase5_model1
+    inputs:
+      upstream_gate: ${{parent.jobs.phase5_model1.outputs.done}}
+      vault_url: ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container: ${{parent.inputs.container}}
+      model1_threshold: ${{parent.inputs.model1_threshold}}
+      register_model2: ${{parent.inputs.register_model2}}
+
+  phase7_scoring:
+    type: command
+    component: file:./components/phase7_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase6_model2
+    inputs:
+      upstream_gate: ${{parent.jobs.phase6_model2.outputs.done}}
+      vault_url: ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container: ${{parent.inputs.container}}
+      top_n: ${{parent.inputs.top_n}}
+      skip_missing: "true"
+
+  phase8_backtest:
+    type: command
+    component: file:./components/phase8_component.yml
+    compute: azureml:stockdataF1
+    depends_on:
+      - phase7_scoring
+    inputs:
+      upstream_gate: ${{parent.jobs.phase7_scoring.outputs.done}}
+      vault_url: ${{parent.inputs.vault_url}}
+      secret_name: ${{parent.inputs.secret_name}}
+      container: ${{parent.inputs.container}}
+      initial_capital: ${{parent.inputs.initial_capital}}
+      top_n: ${{parent.inputs.top_n}}
+      rebalance_freq: ${{parent.inputs.rebalance_freq}}
+      splits_for_backtest: ${{parent.inputs.splits_for_backtest}}

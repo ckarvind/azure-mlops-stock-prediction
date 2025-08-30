@@ -1,0 +1,31 @@
+name: mlops-conda-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy==1.26.4
+  - pandas==2.1.4
+  - scikit-learn==1.3.2
+  - pyarrow==14.0.2
+  - scipy==1.11.4
+  - matplotlib==3.8.2
+  - lxml                    # needed by pandas.read_html() in Phase-1
+  - requests                # Phase-1 scraping and general HTTP
+  - pip=23.2
+  - pip:
+      - yfinance            # Phase-1 ingestion
+      - azure-ai-ml         # MLClient for dataset registration
+      - azure-identity==1.17.1
+      - azure-keyvault-secrets==4.8.0
+      - azure-storage-blob==12.19.0
+      - azureml-mlflow      # brings a matching mlflow; don't add mlflow-skinny
+      - tqdm
+      - joblib
+      - packaging
+      - pandas-ta==0.3.14b
+      - plotly==5.22.0
+      - fpdf==1.7.2
+      - kaleido==0.2.1
+      - xgboost==1.7.6
+      - cloudpickle
