@@ -1,0 +1,9 @@
+{
+	"name": "stock-mlops-adf",
+	"location": "southindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "73f2293d-0516-459b-8421-79e570584a7b",
+		"tenantId": "e24ac094-efd8-4a6b-98d5-a129b32a8c9a"
+	}
+}
