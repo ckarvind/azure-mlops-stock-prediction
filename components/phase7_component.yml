@@ -1,0 +1,32 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase7_final_scoring
+version: 15
+type: command
+display_name: phase7_scoring
+code: ../src
+environment: azureml:phases-env:20
+
+inputs:
+  upstream_gate: {type: uri_folder}     # REQUIRED gate from phase 6
+  vault_url: {type: string}
+  secret_name: {type: string}
+  container: {type: string}
+  top_n: {type: integer}
+  skip_missing: {type: string, optional: true, default: "true"}
+
+outputs:
+  done: {type: uri_folder}
+
+# note the $[[]] around the optional flag
+command: >-
+  test -d ${{inputs.upstream_gate}}
+  && python final_scoring.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --predictions_path predictions
+  --output_prefix predictions/final_scored
+  --top_n ${{inputs.top_n}}
+  --splits train,val,test
+  $[[--skip_missing ${{inputs.skip_missing}}]]
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/done.txt

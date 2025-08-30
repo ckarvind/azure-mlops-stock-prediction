@@ -1,0 +1,36 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase8_backtest
+version: 14
+type: command
+display_name: phase8_backtest
+code: ../src
+environment: azureml:phases-env:20
+
+inputs:
+  upstream_gate: {type: uri_folder}     # REQUIRED gate from phase 7
+  vault_url: {type: string}
+  secret_name: {type: string}
+  container: {type: string}
+  initial_capital: {type: number}
+  top_n: {type: integer}
+  rebalance_freq: {type: string}
+  splits_for_backtest: {type: string}
+
+outputs:
+  done: {type: uri_folder}
+
+command: >-
+  test -d ${{inputs.upstream_gate}}
+  && python backtest.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --model_ready_folder model_ready_data
+  --predictions_folder predictions
+  --final_scored_prefix predictions/final_scored
+  --output_folder backtest_outputs
+  --initial_capital ${{inputs.initial_capital}}
+  --top_n ${{inputs.top_n}}
+  --rebalance_freq ${{inputs.rebalance_freq}}
+  --splits ${{inputs.splits_for_backtest}}
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/done.txt

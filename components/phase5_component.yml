@@ -1,0 +1,41 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase5_model1_fast
+version: 14
+type: command
+display_name: phase5_model1
+code: ../src
+environment: azureml:phases-env:20
+
+inputs:
+  upstream_gate: {type: uri_folder}     # REQUIRED gate from phase 4
+  vault_url: {type: string}
+  secret_name: {type: string}
+  container: {type: string}
+  sample_frac: {type: number}
+  n_iter: {type: integer}
+  cv: {type: integer}
+  optimize_for: {type: string}
+  test_eval_frac: {type: number}
+  register_model1: {type: string}       # "true"/"false"
+  upload_predictions: {type: string}    # "true"/"false"
+
+outputs:
+  done: {type: uri_folder}
+
+command: >-
+  test -d ${{inputs.upstream_gate}}
+  && python train_model1.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --train_blob training_data/train.parquet
+  --val_blob   training_data/val.parquet
+  --test_blob  training_data/test.parquet
+  --sample_frac   ${{inputs.sample_frac}}
+  --n_iter        ${{inputs.n_iter}}
+  --cv            ${{inputs.cv}}
+  --optimize_for  ${{inputs.optimize_for}}
+  --test_eval_frac ${{inputs.test_eval_frac}}
+  --register      ${{inputs.register_model1}}
+  --upload_predictions ${{inputs.upload_predictions}}
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/done.txt

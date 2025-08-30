@@ -1,0 +1,43 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase1_ingestion
+display_name: Phase-1 Ingestion (Stock Data)
+version: 8
+type: command
+
+inputs:
+  vault_url:
+    type: string
+  secret_name:
+    type: string
+    default: AzureBlobConnStr
+  container:
+    type: string
+  blob_folder:
+    type: string
+    default: "stockdata_us_adjclose/"
+  output_prefix:
+    type: string
+    default: "stockdata_us_adjclose"
+  min_years:
+    type: integer
+    default: 20
+  refresh:
+    type: string
+    default: "false"
+
+outputs:
+  done:
+    type: uri_file
+
+code: ../src
+environment: azureml:phases-env:20
+command: >-
+  python phase1_ingest_prod.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --blob_folder ${{inputs.blob_folder}}
+  --output_prefix ${{inputs.output_prefix}}
+  --min_years ${{inputs.min_years}}
+  --refresh ${{inputs.refresh}}
+  && mkdir -p $(dirname ${{outputs.done}}) && echo ok > ${{outputs.done}}

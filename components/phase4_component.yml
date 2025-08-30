@@ -1,0 +1,40 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase4_prepare_training_data
+version: 16
+type: command
+display_name: Phase 4 — Prepare Training
+environment: azureml:phases-env:20
+code: ../src
+
+inputs:
+  upstream_gate: { type: uri_folder }   # NEW: gate from Phase 2
+  vault_url: { type: string }
+  secret_name: { type: string }
+  container: { type: string }
+  tickers: { type: string }
+  start_date: { type: string }
+  end_date: { type: string }
+  target_horizon_days: { type: integer }
+  high_growth_threshold: { type: number }
+  drop_outlier_flags: { type: string }   # "true"/"false"
+
+outputs:
+  done: { type: uri_folder }
+
+command: >-
+  test -d ${{inputs.upstream_gate}}
+  && python prepare_training_data.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --input_folder model_ready_data
+  --output_local training_data
+  --output_blob training_data
+  --upload_to_blob true
+  --tickers ${{inputs.tickers}}
+  --start_date ${{inputs.start_date}}
+  --end_date ${{inputs.end_date}}
+  --target_horizon_days ${{inputs.target_horizon_days}}
+  --high_growth_threshold ${{inputs.high_growth_threshold}}
+  --drop_outlier_flags ${{inputs.drop_outlier_flags}}
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/done.txt

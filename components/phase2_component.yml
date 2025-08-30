@@ -1,0 +1,51 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase2_feature_engineering
+version: 21
+type: command
+display_name: Phase 2 — Feature Engineering
+description: Reads raw OHLCV parquet from Blob, adds TA features & outlier flags, writes model_ready_data.
+environment: azureml:phases-env:20
+
+# If this file is in ./components and the script is at repo root, keep '..'
+# If the script sits next to this YAML, change to '.'
+code: ../src
+
+inputs:
+  # NEW: gate from Phase 1 (binds the file produced by phase1)
+  upstream_gate:  { type: uri_file }
+
+  vault_url:      { type: string }
+  secret_name:    { type: string, default: AzureBlobConnStr }
+  container:      { type: string, default: stock-data }
+  input_prefix:   { type: string, default: stockdata_us_adjclose }
+  output_prefix:  { type: string, default: model_ready_data }
+  sector_blob:    { type: string, default: sectors_20250809.csv }
+  z_threshold:    { type: number, default: 4.0 }
+  workers:        { type: integer, default: 12 }
+  limit:          { type: integer, default: 0 }
+  log_level:      { type: string, default: INFO }
+  mlflow:         { type: string, default: "true" }
+
+# Keep as uri_folder to remain compatible with Phase 3
+outputs:
+  done:
+    type: uri_folder
+
+command: >-
+  python feature_engineering.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --input_prefix ${{inputs.input_prefix}}
+  --output_prefix ${{inputs.output_prefix}}
+  --sector_blob ${{inputs.sector_blob}}
+  --z_threshold ${{inputs.z_threshold}}
+  --workers ${{inputs.workers}}
+  --limit ${{inputs.limit}}
+  --version_ts $(date -u +%Y%m%d)
+  --log_level ${{inputs.log_level}}
+  --mlflow ${{inputs.mlflow}}
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/status.txt
+
+resources:
+  instance_count: 1

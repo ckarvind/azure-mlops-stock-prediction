@@ -1,0 +1,31 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase6_model2_regressor
+version: 15
+type: command
+display_name: phase6_model2
+code: ../src
+environment: azureml:phases-env:20
+
+inputs:
+  upstream_gate: {type: uri_folder}     # REQUIRED gate from phase 5
+  vault_url: {type: string}
+  secret_name: {type: string}
+  container: {type: string}
+  model1_threshold: {type: number}
+  register_model2: {type: string}       # "true"/"false"
+
+outputs:
+  done: {type: uri_folder}
+
+command: >-
+  test -d ${{inputs.upstream_gate}}
+  && python train_model2.py
+  --vault_url ${{inputs.vault_url}}
+  --secret_name ${{inputs.secret_name}}
+  --container ${{inputs.container}}
+  --features_path training_data
+  --predictions_path predictions
+  --model1_threshold ${{inputs.model1_threshold}}
+  --n_jobs -1
+  --register ${{inputs.register_model2}}
+  && mkdir -p ${{outputs.done}} && echo ok > ${{outputs.done}}/done.txt

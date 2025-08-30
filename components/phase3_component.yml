@@ -1,0 +1,57 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: phase3_eda_dq
+version: 22
+type: command
+display_name: Phase 3 — EDA & Data Quality
+description: Scans model_ready_data, computes per-ticker/global stats, uploads CSV/JSON + Plotly HTML + PDF, and emits a gate.
+environment: azureml:phases-env:20
+code: ../src
+
+inputs:
+  upstream_gate:                { type: uri_folder }                 # gate from Phase 2
+
+  vault_url:                    { type: string }
+  secret_name:                  { type: string, default: AzureBlobConnStr }
+  container:                    { type: string, default: stock-data }
+
+  input_prefix:                 { type: string, default: model_ready_data }
+  output_prefix:                { type: string, default: eda/phase3 }
+
+  # DQ thresholds / runtime knobs
+  min_rows_per_ticker:          { type: integer, default: 750 }
+  max_na_fraction:              { type: number,  default: 0.05 }
+  max_duplicate_dates:          { type: integer, default: 0 }
+  max_outlier_fraction:         { type: number,  default: 0.20 }
+  min_pass_rate:                { type: number,  default: 0.95 }   # pipeline will pass 0.80
+  allow_missing_feature_cols:   { type: integer, default: 2 }
+  workers:                      { type: integer, default: 12 }
+  log_level:                    { type: string,  default: INFO }
+
+outputs:
+  done:         { type: uri_folder }                                  # gate for Phase 4
+  dashboard:    { type: uri_file }                                    # index.html
+  report_pdf:   { type: uri_file }                                    # EDA_Report.pdf
+
+command: >-
+  bash -lc "
+    [ -d '${{inputs.upstream_gate}}' ] || { echo 'Gate missing from phase2_feature_engineering'; exit 2; }
+
+    python phase3_eda_dq.py \
+      --vault_url '${{inputs.vault_url}}' \
+      --secret_name '${{inputs.secret_name}}' \
+      --container '${{inputs.container}}' \
+      --input_prefix '${{inputs.input_prefix}}' \
+      --output_prefix '${{inputs.output_prefix}}' \
+      --min_rows_per_ticker ${{inputs.min_rows_per_ticker}} \
+      --max_na_fraction ${{inputs.max_na_fraction}} \
+      --max_duplicate_dates ${{inputs.max_duplicate_dates}} \
+      --max_outlier_fraction ${{inputs.max_outlier_fraction}} \
+      --min_pass_rate ${{inputs.min_pass_rate}} \
+      --allow_missing_feature_cols ${{inputs.allow_missing_feature_cols}} \
+      --workers ${{inputs.workers}} \
+      --log_level '${{inputs.log_level}}'
+
+    mkdir -p '${{outputs.done}}' && echo ok > '${{outputs.done}}/done.txt'
+    test -f index.html && cp index.html '${{outputs.dashboard}}' || true
+    test -f EDA_Report.pdf && cp EDA_Report.pdf '${{outputs.report_pdf}}' || true
+  "
