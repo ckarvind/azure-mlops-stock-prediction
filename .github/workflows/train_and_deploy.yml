@@ -29,10 +29,20 @@ jobs:
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
           --name ${{ secrets.AZURE_ML_WORKSPACE }}
 
-    # 4. Register AML Components
+    # (Optional) Register AML Environment
+    # Uncomment if you modify env_phases.yml
+    # - name: Register AML Environment
+    #   run: |
+    #     az ml environment create \
+    #       --file config/env_phases.yml \
+    #       --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+    #       --workspace-name ${{ secrets.AZURE_ML_WORKSPACE }}
+
+
+    # 4. Register AML Components (from components/ folder)
     - name: Register AML Components
       run: |
-        for comp in phase*_component.yml
+        for comp in components/phase*_component.yml
         do
           echo "Registering $comp ..."
           az ml component create \
@@ -41,11 +51,11 @@ jobs:
             --workspace-name ${{ secrets.AZURE_ML_WORKSPACE }}
         done
 
-    # 5. Submit the pipeline job
+    # 5. Submit the pipeline job (from config/ folder)
     - name: Submit AML Pipeline Job
       run: |
         az ml job create \
-          --file pipeline_job.yml \
+          --file config/pipeline_job.yml \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
           --workspace-name ${{ secrets.AZURE_ML_WORKSPACE }} \
           --stream
